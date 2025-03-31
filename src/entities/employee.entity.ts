@@ -41,6 +41,15 @@ export class Employee {
   @Column('decimal', { precision: 10, scale: 2 })
   salary: number;
 
+  @Column({ nullable: true })
+  passportFile?: string;  // Stores file path
+
+  @Column({ nullable: true })
+  aadharFile?: string;
+
+  @Column({ nullable: true })
+  panFile?: string;
+
   // Verification fields
   @Column({ default: false })
   assistantHrVerified: boolean;
@@ -65,15 +74,7 @@ export class Employee {
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @Column({ nullable: true })
-    passportFile?: string;
-
-    @Column({ nullable: true })
-    aadharFile?: string;
-
-    @Column({ nullable: true })
-    panFile?: string;
+  
 }
 
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException ,BadRequestException  } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Employee } from '../entities/employee.entity';
@@ -13,18 +13,18 @@ export class EmployeeService {
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
-  // Check if employee with same email already exists
-  const existingEmployee = await this.employeeRepository.findOne({ 
-    where: { email: createEmployeeDto.email } 
-  });
+    // Check if employee with same email already exists
+    const existingEmployee = await this.employeeRepository.findOne({ 
+      where: { email: createEmployeeDto.email } 
+    });
 
-  if (existingEmployee) {
-    throw new BadRequestException('Employee with this email already exists');
+    if (existingEmployee) {
+      throw new BadRequestException('Employee with this email already exists');
+    }
+
+    const employee = this.employeeRepository.create(createEmployeeDto);
+    return await this.employeeRepository.save(employee);
   }
-
-  const employee = this.employeeRepository.create(createEmployeeDto);
-  return await this.employeeRepository.save(employee);
-}
 
   async findAll() {
     return await this.employeeRepository.find();
@@ -73,7 +73,6 @@ export class EmployeeService {
     return { message: 'Employee verified successfully' };
   }
 
-
   async getEmployeesForManager() {
     return this.employeeRepository.find({ 
       where: { 
@@ -84,71 +83,63 @@ export class EmployeeService {
     });
   }
   
+  async verifyByManager(id: number) {
+    const employee = await this.employeeRepository.findOne({ where: { id } });
 
-  // Add this to your EmployeeService
-async verifyByManager(id: number) {
-  const employee = await this.employeeRepository.findOne({ where: { id } });
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${id} not found.`);
+    }
 
-  if (!employee) {
-    throw new NotFoundException(`Employee with ID ${id} not found.`);
+    if (!employee.assistantHrVerified) {
+      throw new Error('Employee must be verified by Assistant HR first');
+    }
+
+    if (employee.managerVerified) {
+      throw new Error('Employee is already verified by Manager');
+    }
+
+    employee.managerVerified = true;
+    employee.managerVerificationDate = new Date();
+    await this.employeeRepository.save(employee);
+
+    return { message: 'Employee verified by Manager successfully' };
   }
 
-  if (!employee.assistantHrVerified) {
-    throw new Error('Employee must be verified by Assistant HR first');
+  async verifyByHr(id: number) {
+    const employee = await this.employeeRepository.findOne({ where: { id } });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${id} not found.`);
+    }
+
+    if (!employee.managerVerified) {
+      throw new BadRequestException('Employee must be verified by Manager first');
+    }
+
+    if (employee.hrVerified) {
+      throw new BadRequestException('Employee is already verified by HR');
+    }
+
+    employee.hrVerified = true;
+    employee.hrVerificationDate = new Date();
+    await this.employeeRepository.save(employee);
+
+    return { message: 'Employee finalized by HR successfully' };
   }
 
-  if (employee.managerVerified) {
-    throw new Error('Employee is already verified by Manager');
+  async getHrUnverifiedEmployees() {
+    return this.employeeRepository.find({ 
+      where: { 
+        assistantHrVerified: true,
+        managerVerified: true,
+        hrVerified: false
+      } 
+    });
   }
 
-  employee.managerVerified = true;
-  employee.managerVerificationDate = new Date();
-  await this.employeeRepository.save(employee);
-
-  return { message: 'Employee verified by Manager successfully' };
+  async getVerifiedEmployees() {
+    return this.employeeRepository.find({ 
+      where: { hrVerified: true } 
+    });
+  }
 }
-
-
-async verifyByHr(id: number) {
-  const employee = await this.employeeRepository.findOne({ where: { id } });
-
-  if (!employee) {
-    throw new NotFoundException(`Employee with ID ${id} not found.`);
-  }
-
-  if (!employee.managerVerified) {
-    throw new BadRequestException('Employee must be verified by Manager first');
-  }
-
-  if (employee.hrVerified) {
-    throw new BadRequestException('Employee is already verified by HR');
-  }
-
-  employee.hrVerified = true;
-  employee.hrVerificationDate = new Date();
-  await this.employeeRepository.save(employee);
-
-  return { message: 'Employee finalized by HR successfully' };
-}
-
-
-async getHrUnverifiedEmployees() {
-  return this.employeeRepository.find({ 
-    where: { 
-      assistantHrVerified: true,
-      managerVerified: true,
-      hrVerified: false
-    } 
-  });
-}
-
-async getVerifiedEmployees() {
-  return this.employeeRepository.find({ 
-    where: { hrVerified: true } 
-  });
-}
-
-
-}
-
-

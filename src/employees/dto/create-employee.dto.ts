@@ -39,4 +39,13 @@ alternateEmail: string;
 
   @IsNumber()
   salary: number;
+
+  @IsOptional()
+  passportFile?: string;
+
+  @IsOptional()
+  aadharFile?: string;
+
+  @IsOptional()
+  panFile?: string;
 }
